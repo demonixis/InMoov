@@ -1,48 +1,66 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Demonixis.InMoovSharp.Utils
 {
     public class CoroutineManager
     {
         private Dictionary<object, List<IEnumerator>> _userRoutines;
+        private bool _updating;
 
         public CoroutineManager()
         {
             _userRoutines = new Dictionary<object, List<IEnumerator>>();
         }
 
-        public void Start(object owner, IEnumerator routine)
+        public async void Start(object owner, IEnumerator routine)
         {
+            while (_updating)
+                await Task.Delay(1);
+
             if (!_userRoutines.ContainsKey(owner))
                 _userRoutines.Add(owner, new List<IEnumerator>());
 
             _userRoutines[owner].Add(routine);
         }
 
-        public void Stop(object owner, IEnumerator routine)
+        public async void Stop(object owner, IEnumerator routine)
         {
+            while (_updating)
+                await Task.Delay(1);
+
             if (!_userRoutines.ContainsKey(owner)) return;
             _userRoutines[owner].Remove(routine);
         }
 
-        public void StopAll(object owner)
+        public async void StopAll(object owner)
         {
+            while (_updating)
+                await Task.Delay(1);
+
             if (!_userRoutines.ContainsKey(owner)) return;
             _userRoutines[owner].Clear();
         }
 
-        public void ClearAll()
+        public async void ClearAll()
         {
+            while (_updating)
+                await Task.Delay(1);
+
             _userRoutines.Clear();
         }
 
         public void Update()
         {
+            _updating = true;
+
             foreach (var keyValue in _userRoutines)
             {
                 UpdateRoutines(keyValue.Value);
             }
+
+            _updating = false;
         }
 
         private void UpdateRoutines(List<IEnumerator> routines)

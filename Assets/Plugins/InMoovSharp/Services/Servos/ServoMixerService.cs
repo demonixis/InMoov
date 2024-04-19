@@ -9,18 +9,18 @@ namespace Demonixis.InMoovSharp.Services
     {
         public const string ServoMixerFilename = "servos.json";
 
-        private SerialPortManager _serialPortManager;
+        private DevBoardDataManager? _devBoardManager;
         private ServoData[] _servoData;
         private SerialDataBuffer[] _serialDataBuffer;
 
         public bool Running { get; protected set; }
         public float UpdateInterval { get; set; } = 1.0f / 30.0f;
 
-        public SerialPortManager SerialPortManager => _serialPortManager;
+        public DevBoardDataManager? DevBoardManager => _devBoardManager;
 
         public ServoMixerService()
         {
-            _serialPortManager = new SerialPortManager();
+            _devBoardManager = null;
 
             // Initialize data
             var names = Enum.GetNames(typeof(ServoIdentifier));
@@ -28,10 +28,26 @@ namespace Demonixis.InMoovSharp.Services
             for (var i = 0; i < _servoData.Length; i++)
                 _servoData[i] = ServoData.New((ServoIdentifier)i);
 
-            names = Enum.GetNames(typeof(ArduinoIdentifiers));
+            names = Enum.GetNames(typeof(DevBoardIds));
             _serialDataBuffer = new SerialDataBuffer[names.Length];
-            for (var i = 0; i < _serialDataBuffer.Length; i++)
-                _serialDataBuffer[i] = new SerialDataBuffer();
+        }
+
+        public void SetDevBoardDataManager(DevBoardDataManager serialPortManager)
+        {
+            if (_devBoardManager != null)
+            {
+                _devBoardManager.Dispose();
+                _devBoardManager = null;
+            }
+
+            _devBoardManager = serialPortManager;
+            _devBoardManager.ConnectionChanged += OnDevBoardManagerConnectionChanged;
+            _devBoardManager.Initialize();
+        }
+
+        private void OnDevBoardManagerConnectionChanged(bool connected, SerialData data)
+        {
+            _serialDataBuffer[data.CardId] = connected ? new SerialDataBuffer(data.Board) : null;
         }
 
         protected override void SafeInitialize()
@@ -42,7 +58,11 @@ namespace Demonixis.InMoovSharp.Services
             if (servoMixerData != null && servoMixerData.Length == _servoData.Length)
                 _servoData = servoMixerData;
 
-            _serialPortManager.Initialize();
+            if (_devBoardManager == null)
+            {
+                var serialPortManager = new SerialPortManager();
+                SetDevBoardDataManager(serialPortManager);
+            }
 
             StopAllCoroutines();
             StartCoroutine(ServoLoop());
@@ -62,7 +82,7 @@ namespace Demonixis.InMoovSharp.Services
         {
             SaveGame.SaveData(_servoData, ServoMixerFilename, "Config");
             StopAllCoroutines();
-            _serialPortManager.Dispose();
+            _devBoardManager?.Dispose();
         }
 
         private IEnumerator ServoLoop()
@@ -73,7 +93,7 @@ namespace Demonixis.InMoovSharp.Services
             {
                 // Clear previous values.
                 for (var i = 0; i < _serialDataBuffer.Length; i++)
-                    _serialDataBuffer[i].ClearData();
+                    _serialDataBuffer[i]?.ClearData();
 
                 // Map new values.
                 for (var i = 0; i < _servoData.Length; i++)
@@ -105,14 +125,14 @@ namespace Demonixis.InMoovSharp.Services
                         }
                     }
 
-                    _serialDataBuffer[cardIndex].SetValue(data.PinId, data.Value, data.Enabled && !data.Sleeping);
+                    _serialDataBuffer[cardIndex]?.SetValue(data.PinId, data.Value, data.Enabled && !data.Sleeping);
                 }
 
                 // Send values.
-                if (!Paused)
+                if (!Paused && _devBoardManager != null)
                 {
                     for (var i = 0; i < _serialDataBuffer.Length; i++)
-                        _serialPortManager.SendData(i, _serialDataBuffer[i]);
+                        _devBoardManager.SendData(i, _serialDataBuffer[i]);
                 }
 
                 yield return CoroutineFactory.WaitForSeconds(UpdateInterval);

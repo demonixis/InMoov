@@ -51,13 +51,14 @@ namespace Demonixis.InMoovSharp.Services
                 Max = 180,
                 Neutral = 90,
                 Speed = 1,
-                PinId = SerialPortManager.PinStart,
-                CardId = (int)ArduinoIdentifiers.None,
+                PinId = 1,
+                CardId = (int)DevBoardIds.None,
                 Enabled = false,
                 Value = 90,
                 ScaleValueTo180 = 0,
                 MixedServo = ServoIdentifier.None,
-                MixageType = ServoMixageType.None
+                MixageType = ServoMixageType.None,
+                AutoDisableDelay = 1
             };
         }
     }
@@ -92,11 +93,11 @@ namespace Demonixis.InMoovSharp.Services
         LeftShoulderYaw,
         LeftShoulderPitch,
         LeftShoulderRoll,
-        //LeftElbowYaw,
+        LeftElbowYaw,
         LeftElbowPitch,
-        // LeftElbowRoll
-        // LeftWristYaw,
-        // LeftWristPitch,
+        LeftElbowRoll,
+        LeftWristYaw,
+        LeftWristPitch,
         LeftWristRoll,
 
         // Left Hand
@@ -110,11 +111,11 @@ namespace Demonixis.InMoovSharp.Services
         RightShoulderYaw,
         RightShoulderPitch,
         RightShoulderRoll,
-        //RightElbowYaw,
+        RightElbowYaw,
         RightElbowPitch,
-        // RightElbowRoll
-        // RightWristYaw,
-        // RightWristPitch,
+        RightElbowRoll,
+        RightWristYaw,
+        RightWristPitch,
         RightWristRoll,
 
         // Right Hand

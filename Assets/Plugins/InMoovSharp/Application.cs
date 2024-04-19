@@ -1,4 +1,7 @@
-﻿namespace Demonixis.InMoovSharp
+﻿using System;
+using System.IO;
+
+namespace Demonixis.InMoovSharp
 {
 #if !INMOOV_UNITY
     public enum RuntimePlatform
