@@ -9,12 +9,12 @@ namespace Demonixis.InMoovSharp.Services
     public sealed class SerialPortManager : DevBoardDataManager
     {
         public const string SerialFilename = "serial.json";
-        private Dictionary<SerialData, SerialPort> _serialPorts;
+        private Dictionary<DevBoardConnectionData, SerialPort> _serialPorts;
         private bool _disposed;
 
         public SerialPortManager()
         {
-            _serialPorts = new Dictionary<SerialData, SerialPort>();
+            _serialPorts = new Dictionary<DevBoardConnectionData, SerialPort>();
         }
 
         public override bool IsConnected(int cardId)
@@ -30,7 +30,7 @@ namespace Demonixis.InMoovSharp.Services
 
         public override void Initialize()
         {
-            var savedData = SaveGame.LoadData<SerialData[]>(SerialFilename, "Config");
+            var savedData = SaveGame.LoadData<DevBoardConnectionData[]>(SerialFilename, "Config");
 
             if (savedData == null || savedData.Length <= 0) return;
             
@@ -44,7 +44,7 @@ namespace Demonixis.InMoovSharp.Services
 
             if (_disposed) return;
 
-            var serialData = new SerialData[_serialPorts.Count];
+            var serialData = new DevBoardConnectionData[_serialPorts.Count];
             var i = 0;
             foreach (var keyValue in _serialPorts)
                 serialData[i++] = keyValue.Key;
@@ -77,7 +77,7 @@ namespace Demonixis.InMoovSharp.Services
                 serialPort.Write(buffer.DataBuffer, 0, buffer.DataBuffer.Length);
         }
 
-        private bool TryGetSerialData(int cardId, out SerialData serialData)
+        private bool TryGetSerialData(int cardId, out DevBoardConnectionData serialData)
         {
             if (_serialPorts.Count > 0)
             {
@@ -90,7 +90,7 @@ namespace Demonixis.InMoovSharp.Services
                     }
                 }
             }
-            serialData = new SerialData();
+            serialData = new DevBoardConnectionData();
             return false;
         }
 
@@ -128,7 +128,7 @@ namespace Demonixis.InMoovSharp.Services
             }
         }
 
-        public override bool Connect(SerialData serialData)
+        public override bool Connect(DevBoardConnectionData serialData)
         {
             int cardId = serialData.CardId;
 
@@ -168,7 +168,7 @@ namespace Demonixis.InMoovSharp.Services
 
         public override void Disconnect(int cardId)
         {
-            if (TryGetSerialData(cardId, out SerialData serialData))
+            if (TryGetSerialData(cardId, out DevBoardConnectionData serialData))
             {
                 _serialPorts[serialData].Dispose();
                 _serialPorts.Remove(serialData);

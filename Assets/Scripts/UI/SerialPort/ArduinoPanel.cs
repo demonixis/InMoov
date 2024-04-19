@@ -11,11 +11,13 @@ namespace Demonixis.InMoov.UI
 {
     public sealed class ArduinoPanel : MonoBehaviour
     {
-        private SerialPortManager _serialPort;
+        private DevBoardDataManager _devBoardDataManager;
 
         [SerializeField] private TextMeshProUGUI _status;
         [SerializeField] private TMP_Dropdown _portList;
         [SerializeField] private TMP_Dropdown _cardList;
+        [SerializeField] private TMP_Dropdown _cardType;
+        [SerializeField] private TMP_Dropdown _connectionType;
         [SerializeField] private Button _connectButton;
         [SerializeField] private Button _disconnectedButton;
 
@@ -28,17 +30,36 @@ namespace Demonixis.InMoov.UI
         {
             var robot = unityRobot.Robot;
             var mixer = robot.GetService<ServoMixerService>();
-            _serialPort = mixer.SerialPortManager;
+            _devBoardDataManager = mixer.DevBoardManager;
+
             _cardList.options.Clear();
             _portList.options.Clear();
+            _cardType.options.Clear();
+            _connectionType.options.Clear();
 
-            var names = Enum.GetNames(typeof(ArduinoIdentifiers));
+            var names = Enum.GetNames(typeof(DevBoardIds));
             foreach (var id in names)
                 _cardList.options.Add(new TMP_Dropdown.OptionData(id));
 
             _cardList.SetValueWithoutNotify(0);
             _cardList.RefreshShownValue();
             _cardList.onValueChanged.AddListener(i => RefreshCardStatus());
+
+            // Dev boards
+            names = Enum.GetNames(typeof(DevBoards));
+            foreach (var id in names)
+                _cardType.options.Add(new TMP_Dropdown.OptionData(id));
+
+            _cardType.SetValueWithoutNotify(0);
+            _cardType.RefreshShownValue();
+
+            // Connection Type
+            names = Enum.GetNames(typeof(DevBoardConnections));
+            foreach (var id in names)
+                _connectionType.options.Add(new TMP_Dropdown.OptionData(id));
+
+            _connectionType.SetValueWithoutNotify(0);
+            _connectionType.RefreshShownValue();
 
             RefreshPorts(true);
             RefreshCardStatus();
@@ -47,7 +68,7 @@ namespace Demonixis.InMoov.UI
 
         private void OnEnable()
         {
-            if (_serialPort == null) return;
+            if (_devBoardDataManager == null) return;
             StartCoroutine(RefreshPortsCoroutine());
         }
 
@@ -59,7 +80,7 @@ namespace Demonixis.InMoov.UI
         public void RefreshCardStatus()
         {
             var cardId = _cardList.value;
-            var connected = _serialPort.IsConnected(cardId);
+            var connected = _devBoardDataManager.IsConnected(cardId);
             _status.text = connected ? "Connected" : "Disconnected";
             _connectButton.interactable = !connected;
             _disconnectedButton.interactable = connected;
@@ -117,10 +138,15 @@ namespace Demonixis.InMoov.UI
                 return;
             }
 
-            var portName = _portList.options[_portList.value].text;
-            var cardId = _cardList.value;
+            var data = new DevBoardConnectionData
+            {
+                Board = (DevBoards)_cardType.value,
+                BoardConnection = (DevBoardConnections)_connectionType.value,
+                CardId = _cardList.value,
+                PortName = _portList.options[_portList.value].text
+            };
 
-            _serialPort.Connect(cardId, portName);
+            _devBoardDataManager.Connect(data);
 
             StartCoroutine(RefreshCardStatusCoroutine());
         }
@@ -128,7 +154,7 @@ namespace Demonixis.InMoov.UI
         public void Disconnect()
         {
             var cardId = _cardList.value;
-            _serialPort.Disconnect(cardId);
+            _devBoardDataManager.Disconnect(cardId);
 
             StartCoroutine(RefreshCardStatusCoroutine());
         }

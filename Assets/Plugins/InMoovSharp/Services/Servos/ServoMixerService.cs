@@ -45,7 +45,7 @@ namespace Demonixis.InMoovSharp.Services
             _devBoardManager.Initialize();
         }
 
-        private void OnDevBoardManagerConnectionChanged(bool connected, SerialData data)
+        private void OnDevBoardManagerConnectionChanged(bool connected, DevBoardConnectionData data)
         {
             _serialDataBuffer[data.CardId] = connected ? new SerialDataBuffer(data.Board) : null;
         }

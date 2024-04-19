@@ -30,14 +30,14 @@ namespace Demonixis.InMoovSharp.Services
     }
 
     [Serializable]
-    public struct SerialData : IEquatable<SerialData>
+    public struct DevBoardConnectionData : IEquatable<DevBoardConnectionData>
     {
         public int CardId;
         public string PortName;
         public DevBoards Board;
         public DevBoardConnections BoardConnection;
 
-        public bool Equals(SerialData other)
+        public bool Equals(DevBoardConnectionData other)
         {
             return CardId == other.CardId &&
                    PortName == other.PortName &&

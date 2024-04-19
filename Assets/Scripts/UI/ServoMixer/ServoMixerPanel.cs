@@ -70,13 +70,13 @@ namespace Demonixis.InMoov.UI
             foreach (var item in names)
                 _mixages.options.Add(new TMP_Dropdown.OptionData(item));
 
-            names = Enum.GetNames(typeof(ArduinoIdentifiers));
+            names = Enum.GetNames(typeof(DevBoardIds));
             _servoCardId.options.Clear();
             foreach (var item in names)
                 _servoCardId.options.Add(new TMP_Dropdown.OptionData(item));
 
             _servoPinId.options.Clear();
-            for (var i = SerialPortManager.PinStart; i <= SerialPortManager.PinEndMega; i++)
+            for (var i = 2; i <= 63; i++)
                 _servoPinId.options.Add(new TMP_Dropdown.OptionData($"Pin #{i}"));
 
             // Bind events
@@ -100,7 +100,7 @@ namespace Demonixis.InMoov.UI
             _servoPinId.RefreshShownValue();
             _servoPinId.onValueChanged.AddListener(i =>
             {
-                _currentData.PinId = (byte) (_servoPinId.value + SerialPortManager.PinStart);
+                _currentData.PinId = (byte) (_servoPinId.value + 2);
                 UpdateDataOnArduino();
             });
 
