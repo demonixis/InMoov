@@ -70,10 +70,9 @@ namespace Demonixis.InMoov.UI
             foreach (var item in names)
                 _mixages.options.Add(new TMP_Dropdown.OptionData(item));
 
-            names = Enum.GetNames(typeof(DevBoardIds));
             _servoCardId.options.Clear();
-            foreach (var item in names)
-                _servoCardId.options.Add(new TMP_Dropdown.OptionData(item));
+            for(var i = 0; i < DevBoardUtils.MaxSupportedDevBoard; i++)
+                _servoCardId.options.Add(new TMP_Dropdown.OptionData($"{i}"));
 
             _servoPinId.options.Clear();
             for (var i = 2; i <= 63; i++)

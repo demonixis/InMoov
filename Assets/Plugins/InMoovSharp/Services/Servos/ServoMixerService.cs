@@ -28,8 +28,7 @@ namespace Demonixis.InMoovSharp.Services
             for (var i = 0; i < _servoData.Length; i++)
                 _servoData[i] = ServoData.New((ServoIdentifier)i);
 
-            names = Enum.GetNames(typeof(DevBoardIds));
-            _serialDataBuffer = new SerialDataBuffer[names.Length];
+            _serialDataBuffer = new SerialDataBuffer[DevBoardUtils.MaxSupportedDevBoard];
         }
 
         public void SetDevBoardDataManager(DevBoardDataManager serialPortManager)
@@ -45,7 +44,7 @@ namespace Demonixis.InMoovSharp.Services
             _devBoardManager.Initialize();
         }
 
-        private void OnDevBoardManagerConnectionChanged(bool connected, DevBoardConnectionData data)
+        private void OnDevBoardManagerConnectionChanged(bool connected, DevBoardData data)
         {
             _serialDataBuffer[data.CardId] = connected ? new SerialDataBuffer(data.Board) : null;
         }

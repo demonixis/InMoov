@@ -1,19 +1,7 @@
 ﻿using System;
-using System.Drawing;
 
 namespace Demonixis.InMoovSharp.Services
 {
-    public enum DevBoardIds
-    {
-        Left = 0,
-        Right,
-        Card3,
-        Card4,
-        Card5,
-        Card6,
-        None
-    }
-
     public enum DevBoards
     {
         ArduinoStandard,
@@ -29,43 +17,52 @@ namespace Demonixis.InMoovSharp.Services
         Wifi
     }
 
+    public enum DevBoardUsages
+    {
+        ServoManagement,
+        Sensors,
+        Other
+    }
+
     [Serializable]
-    public struct DevBoardConnectionData : IEquatable<DevBoardConnectionData>
+    public struct DevBoardData : IEquatable<DevBoardData>
     {
         public int CardId;
-        public string PortName;
+        public string ConnectionData;
         public DevBoards Board;
         public DevBoardConnections BoardConnection;
+        public DevBoardUsages Usages;
 
-        public bool Equals(DevBoardConnectionData other)
+        public bool Equals(DevBoardData other)
         {
             return CardId == other.CardId &&
-                   PortName == other.PortName &&
+                   ConnectionData == other.ConnectionData &&
                    Board == other.Board &&
-                   BoardConnection == other.BoardConnection;
+                   BoardConnection == other.BoardConnection &&
+                   Usages == other.Usages;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(CardId, PortName, Board, BoardConnection);
+            return HashCode.Combine(CardId, ConnectionData, Board, BoardConnection, Usages);
         }
     }
 
-    public static class DevBoardData
+    public static class DevBoardUtils
     {
         public const int ArduinoPinStart = 2;
         public const int ArduinoPinEnd = 13;
         public const int ArduinoMegaPinEnd = 53;
         public const int ESP32PinStart = 12;
         public const int ESP32PinEnd = 27;
-        public const string BluetoothName = "InMoovSharpBT";
-        public const string BluetoothLEName = "InMoovSharpBT-LE";
+        public const int MaxSupportedDevBoard = 8;
+        public const string DefaultBluetoothName = "InMoovSharpBT";
+        public const string DefaultBluetoothLEName = "InMoovSharpBT-LE";
         public const string BluetoothLEServiceUUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
         public const string BluetoothLECharacteristicUUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-        public const string WifiSSID = "InMoovSharpWifi";
-        public const string WifiPassword = "inmoovsharp";
         public const string WifiLocalIP = "192.168.1.1";
-        public const int DefaultBaudRate = 9600;
+        public const byte WifiLocalPort = 80;
+        public const int DefaultArduinoBaudRate = 9600;
         public const int DefaultESP32BaudRate = 115200;
 
         public static int GetBaudRate(DevBoards boardType)
@@ -73,7 +70,7 @@ namespace Demonixis.InMoovSharp.Services
             if (boardType == DevBoards.ESP32)
                 return DefaultESP32BaudRate;
 
-            return DefaultBaudRate;
+            return DefaultArduinoBaudRate;
         }
 
         public static int GetMaximumServo(DevBoards boardType)

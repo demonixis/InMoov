@@ -3,6 +3,7 @@ using Demonixis.InMoovUnity;
 using System;
 using System.Collections;
 using System.IO.Ports;
+using System.Security.Cryptography;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,7 @@ namespace Demonixis.InMoov.UI
         [SerializeField] private TMP_Dropdown _cardList;
         [SerializeField] private TMP_Dropdown _cardType;
         [SerializeField] private TMP_Dropdown _connectionType;
+        [SerializeField] private TMP_Dropdown _usage;
         [SerializeField] private Button _connectButton;
         [SerializeField] private Button _disconnectedButton;
 
@@ -36,14 +38,21 @@ namespace Demonixis.InMoov.UI
             _portList.options.Clear();
             _cardType.options.Clear();
             _connectionType.options.Clear();
+            _usage.options.Clear();
 
-            var names = Enum.GetNames(typeof(DevBoardIds));
-            foreach (var id in names)
-                _cardList.options.Add(new TMP_Dropdown.OptionData(id));
+            for (var i = 0; i < DevBoardUtils.MaxSupportedDevBoard; i++)
+                _cardList.options.Add(new TMP_Dropdown.OptionData($"{i}"));
 
             _cardList.SetValueWithoutNotify(0);
             _cardList.RefreshShownValue();
             _cardList.onValueChanged.AddListener(i => RefreshCardStatus());
+
+            var names = Enum.GetNames(typeof(DevBoardUsages));
+            foreach (var id in names)
+                _usage.options.Add(new TMP_Dropdown.OptionData(id));
+
+            _usage.SetValueWithoutNotify(0);
+            _usage.RefreshShownValue();
 
             // Dev boards
             names = Enum.GetNames(typeof(DevBoards));
@@ -138,12 +147,12 @@ namespace Demonixis.InMoov.UI
                 return;
             }
 
-            var data = new DevBoardConnectionData
+            var data = new DevBoardData
             {
                 Board = (DevBoards)_cardType.value,
                 BoardConnection = (DevBoardConnections)_connectionType.value,
                 CardId = _cardList.value,
-                PortName = _portList.options[_portList.value].text
+                ConnectionData = _portList.options[_portList.value].text
             };
 
             _devBoardDataManager.Connect(data);

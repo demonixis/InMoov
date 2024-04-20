@@ -12,10 +12,10 @@ namespace Demonixis.InMoovSharp.Services
 
         public SerialDataBuffer(DevBoards boardType)
         {
-            DevBoardData.GetPinStartEnd(boardType, out int pinStart, out int pinEnd);
+            DevBoardUtils.GetPinStartEnd(boardType, out int pinStart, out int pinEnd);
             PinStart = pinStart;
             PinEnd = pinEnd;
-            MaximumServoCount = DevBoardData.GetMaximumServo(boardType);
+            MaximumServoCount = DevBoardUtils.GetMaximumServo(boardType);
             DataBuffer = new byte[MaximumServoCount];
         }
 
@@ -33,7 +33,7 @@ namespace Demonixis.InMoovSharp.Services
 
         public static byte[] GetClearedBuffer(DevBoards boardType)
         {
-            var maximumServoCount = DevBoardData.GetMaximumServo(boardType);
+            var maximumServoCount = DevBoardUtils.GetMaximumServo(boardType);
             var buffer = new byte[maximumServoCount];
             for (var i = 0; i < buffer.Length; i++)
                 buffer[i] = byte.MaxValue;

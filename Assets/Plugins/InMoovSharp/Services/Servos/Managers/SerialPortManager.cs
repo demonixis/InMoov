@@ -2,6 +2,7 @@ using Demonixis.InMoovSharp.Settings;
 using System;
 using System.Collections.Generic;
 using System.IO.Ports;
+using System.Linq;
 
 namespace Demonixis.InMoovSharp.Services
 {
@@ -9,31 +10,30 @@ namespace Demonixis.InMoovSharp.Services
     public sealed class SerialPortManager : DevBoardDataManager
     {
         public const string SerialFilename = "serial.json";
-        private Dictionary<DevBoardConnectionData, SerialPort> _serialPorts;
+        private Dictionary<int, SerialPort> _serialPorts;
+        private Dictionary<int, DevBoardData> _devBoardMapping;
         private bool _disposed;
 
         public SerialPortManager()
         {
-            _serialPorts = new Dictionary<DevBoardConnectionData, SerialPort>();
+            _serialPorts = new();
+            _devBoardMapping = new();
         }
 
         public override bool IsConnected(int cardId)
         {
-            foreach (var keyValue in _serialPorts)
-            {
-                if (keyValue.Key.CardId == cardId && keyValue.Value.IsOpen)
-                    return true;
-            }
+            if (!_serialPorts.ContainsKey(cardId))
+                return false;
 
-            return false;
+            return _serialPorts[cardId].IsOpen;
         }
 
         public override void Initialize()
         {
-            var savedData = SaveGame.LoadData<DevBoardConnectionData[]>(SerialFilename, "Config");
+            var savedData = SaveGame.LoadData<DevBoardData[]>(SerialFilename, "Config");
 
             if (savedData == null || savedData.Length <= 0) return;
-            
+
             foreach (var data in savedData)
                 Connect(data);
         }
@@ -44,11 +44,7 @@ namespace Demonixis.InMoovSharp.Services
 
             if (_disposed) return;
 
-            var serialData = new DevBoardConnectionData[_serialPorts.Count];
-            var i = 0;
-            foreach (var keyValue in _serialPorts)
-                serialData[i++] = keyValue.Key;
-
+            var serialData = _devBoardMapping.Values.ToArray();    
             SaveGame.SaveData(serialData, SerialFilename, "Config");
 
             foreach (var serial in _serialPorts)
@@ -58,12 +54,15 @@ namespace Demonixis.InMoovSharp.Services
 
                 if (serialPort.IsOpen)
                 {
-                    var clearBuffer = SerialDataBuffer.GetClearedBuffer(serial.Key.Board);
+                    var board = _devBoardMapping[serial.Key].Board;
+                    var clearBuffer = SerialDataBuffer.GetClearedBuffer(board);
                     serialPort.Write(clearBuffer, 0, clearBuffer.Length);
                 }
                 serial.Value.Dispose();
             }
 
+            _serialPorts.Clear();
+            _devBoardMapping.Clear();
             _disposed = true;
         }
 
@@ -71,45 +70,10 @@ namespace Demonixis.InMoovSharp.Services
         {
 #if UNITY_EDITOR
             //if (_logFirstTrame && cardId == 0)
-                //Robot.Log($"{cardId}_{buffer}");
+            //Robot.Log($"{cardId}_{buffer}");
 #endif
-            if (TryGetSerialPort(cardId, out SerialPort serialPort))
+            if (_serialPorts.TryGetValue(cardId, out SerialPort serialPort))
                 serialPort.Write(buffer.DataBuffer, 0, buffer.DataBuffer.Length);
-        }
-
-        private bool TryGetSerialData(int cardId, out DevBoardConnectionData serialData)
-        {
-            if (_serialPorts.Count > 0)
-            {
-                foreach (var keyValue in _serialPorts)
-                {
-                    if (keyValue.Key.CardId == cardId)
-                    {
-                        serialData = keyValue.Key;
-                        return true;
-                    }
-                }
-            }
-            serialData = new DevBoardConnectionData();
-            return false;
-        }
-
-        private bool TryGetSerialPort(int cardId, out SerialPort serial)
-        {
-            if (_serialPorts.Count > 0)
-            {
-                foreach (var keyValue in _serialPorts)
-                {
-                    if (keyValue.Key.CardId == cardId)
-                    {
-                        serial = keyValue.Value;
-                        return true;
-                    }
-                }
-            }
-
-            serial = null;
-            return false;
         }
 
         private void Update()
@@ -123,29 +87,31 @@ namespace Demonixis.InMoovSharp.Services
                 var result = sp.Value.ReadExisting();
 #if UNITY_EDITOR
                 //if (_logArduino && !string.IsNullOrEmpty(result))
-                    //Robot.Log(result);
+                //Robot.Log(result);
 #endif
             }
         }
 
-        public override bool Connect(DevBoardConnectionData serialData)
+        public override bool Connect(DevBoardData serialData)
         {
-            int cardId = serialData.CardId;
+            var cardId = serialData.CardId;
 
-            if (_serialPorts.ContainsKey(serialData)) return false;
+            if (_serialPorts.ContainsKey(cardId))
+                return false;
 
             SerialPort serialPort = null;
 
             try
             {
-                serialPort = new SerialPort(serialData.PortName, DevBoardData.GetBaudRate(serialData.Board));
+                serialPort = new SerialPort(serialData.ConnectionData, DevBoardUtils.GetBaudRate(serialData.Board));
                 serialPort.Open();
 
                 if (serialPort.IsOpen)
                 {
                     serialPort.ErrorReceived += (sender, e) => Robot.Log($"Error {e}");
                     serialPort.DataReceived += (sender, e) => { };// Robot.Log($"Data Received: {e}");
-                    _serialPorts.Add(serialData, serialPort);
+                    _serialPorts.Add(cardId, serialPort);
+                    _devBoardMapping.Add(cardId, serialData);
                     NotifyConnectionChanged(true, serialData);
                     return true;
                 }
@@ -168,10 +134,11 @@ namespace Demonixis.InMoovSharp.Services
 
         public override void Disconnect(int cardId)
         {
-            if (TryGetSerialData(cardId, out DevBoardConnectionData serialData))
+            if (_devBoardMapping.TryGetValue(cardId, out DevBoardData serialData))
             {
-                _serialPorts[serialData].Dispose();
-                _serialPorts.Remove(serialData);
+                _serialPorts[cardId].Dispose();
+                _serialPorts.Remove(cardId);
+                _devBoardMapping.Remove(cardId);
                 NotifyConnectionChanged(false, serialData);
             }
         }

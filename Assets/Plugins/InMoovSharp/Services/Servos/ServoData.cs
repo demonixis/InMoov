@@ -12,7 +12,6 @@ namespace Demonixis.InMoovSharp.Services
     [Serializable]
     public struct ServoData
     {
-        public ServoIdentifier Id;
         public string ServoName;
         public bool Inverse;
         public byte Min;
@@ -34,6 +33,25 @@ namespace Demonixis.InMoovSharp.Services
         public ServoIdentifier MixedServo;
         public ServoMixageType MixageType;
 
+        public ServoIdentifier Id
+        {
+            get
+            {
+                var names = Enum.GetNames(typeof(ServoIdentifier));
+                for (var i = 0; i < names.Length; i++)
+                {
+                    if (names[i] == ServoName)
+                        return (ServoIdentifier)i;
+                }
+
+                return ServoIdentifier.None;
+            }
+            set
+            {
+                ServoName = $"{value}";
+            }
+        }
+
         public override string ToString()
         {
             return
@@ -44,7 +62,6 @@ namespace Demonixis.InMoovSharp.Services
         {
             return new ServoData
             {
-                Id = servoId,
                 ServoName = $"{servoId}",
                 Inverse = false,
                 Min = 0,
@@ -52,7 +69,7 @@ namespace Demonixis.InMoovSharp.Services
                 Neutral = 90,
                 Speed = 1,
                 PinId = 1,
-                CardId = (int)DevBoardIds.None,
+                CardId = -1,
                 Enabled = false,
                 Value = 90,
                 ScaleValueTo180 = 0,
